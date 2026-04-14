@@ -14,17 +14,14 @@ jobs:
       - name: Install PlatformIO
         run: pip install platformio
       
-      - name: Check available ESP32-C3 boards
-        run: platformio boards esp32c3
+      - name: Build firmware with PlatformIO
+        run: platformio run -e esp32-c3-devkitm-1
       
-      - name: Check platformio.ini
-        run: cat platformio.ini
+      - name: Check build output
+        run: find .pio -name "*.bin" -type f
       
-      - name: List directory structure
-        run: |
-          echo "Current directory:"
-          pwd
-          echo "Files in repo:"
-          ls -la
-          echo "src directory:"
-          ls -la src/
+      - name: Upload firmware artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware
+          path: .pio/build/esp32-c3-devkitm-1/
