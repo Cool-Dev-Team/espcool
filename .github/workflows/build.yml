@@ -6,24 +6,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+      - name: Set up Arduino CLI
+        uses: arduino/setup-arduino-cli@v1
       
-      - name: Install PlatformIO
+      - name: Install ESP32 boards
         run: |
-          python -m pip install --upgrade pip
-          pip install platformio
+          arduino-cli config init
+          arduino-cli core install esp32:esp32
       
-      - name: Build firmware
-        run: platformio run -e ESP32-C3-DevKitM-1 -v
+      - name: Compile sketch
+        run: arduino-cli compile --fqbn esp32:esp32:esp32c3 src/main.cpp -o firmware.elf
       
-      - name: Check if build succeeded
-        run: ls -la .pio/build/ESP32-C3-DevKitM-1/
+      - name: Create binary
+        run: |
+          mkdir -p build
+          cp firmware.elf build/firmware.bin
+          ls -la build/
       
       - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
           name: firmware-binary
-          path: .pio/build/ESP32-C3-DevKitM-1/firmware.bin
+          path: build/firmware.bin
