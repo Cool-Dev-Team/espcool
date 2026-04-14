@@ -6,25 +6,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set up Arduino CLI
-        uses: arduino/setup-arduino-cli@v1
-      
-      - name: Install ESP32 boards
-        run: |
-          arduino-cli config init
-          arduino-cli core install esp32:esp32
-      
-      - name: Compile sketch
-        run: arduino-cli compile --fqbn esp32:esp32:esp32c3 src/main.cpp -o firmware.elf
-      
-      - name: Create binary
-        run: |
-          mkdir -p build
-          cp firmware.elf build/firmware.bin
-          ls -la build/
-      
-      - name: Upload firmware
-        uses: actions/upload-artifact@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          name: firmware-binary
-          path: build/firmware.bin
+          python-version: '3.11'
+      
+      - name: Install PlatformIO
+        run: pip install platformio
+      
+      - name: Check available ESP32-C3 boards
+        run: platformio boards esp32c3
+      
+      - name: Check platformio.ini
+        run: cat platformio.ini
+      
+      - name: List directory structure
+        run: |
+          echo "Current directory:"
+          pwd
+          echo "Files in repo:"
+          ls -la
+          echo "src directory:"
+          ls -la src/
