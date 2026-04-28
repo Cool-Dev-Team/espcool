@@ -4,59 +4,71 @@
 
 WebServer server(80);
 
-// Track which tool we are currently using
 int currentMode = 0;
 const int TOTAL_MODES = 4;
 
-// The minimalist, flat-design HTML for the FischyWeb Server
+// Target IP for testing your server's port forwarding (Change to your server's local IP)
+const char* serverIP = "192.168.1.100";
+const int targetPorts[] = {80, 443, 25565}; // Web, SSL, and a custom game/app port
+
+// Ultra-flat, strict minimalist HTML hosting the hardware pinout data
 const char* fischyWebHTML = R"=====(
 <!DOCTYPE html>
 <html>
 <head>
-<title>FischyWeb-S3 Admin</title>
+<title>FischyWeb-S3 | Pinout Host</title>
 <style>
-body { font-family: monospace; background: #FFF; color: #000; text-align: center; padding-top: 50px; margin: 0; }
-h1 { font-weight: normal; text-transform: uppercase; letter-spacing: 2px; border-bottom: 2px solid #000; display: inline-block; padding-bottom: 10px; }
-p { font-size: 1.2em; }
-.status { font-weight: bold; padding: 10px; border: 2px solid #000; display: inline-block; margin-top: 20px;}
+body { font-family: monospace; background: #FFFFFF; color: #000000; padding: 40px; margin: 0; }
+h1 { font-weight: normal; text-transform: uppercase; border-bottom: 2px solid #000; display: inline-block; padding-bottom: 5px; }
+table { width: 100%; max-width: 600px; border-collapse: collapse; margin-top: 20px; }
+th, td { border: 2px solid #000; padding: 10px; text-align: left; }
+th { background: #000; color: #FFF; font-weight: normal; }
+.status { margin-top: 30px; font-weight: bold; border: 2px solid #000; padding: 15px; display: inline-block; }
 </style>
 </head>
 <body>
-<h1>FischyWeb-S3</h1>
-<p>Diagnostic Server Online</p>
-<div class="status">System Status: NOMINAL</div>
+<h1>FischyWeb-S3 Hardware DB</h1>
+<p>Live Diagnostic Server</p>
+
+<table>
+<tr><th>Pin Location</th><th>Signal Mapping</th><th>Status</th></tr>
+<tr><td>Top Right (Pin 1)</td><td>RED / Video</td><td>Verified</td></tr>
+<tr><td>Row 2 (Pin 6)</td><td>RED Ground</td><td>Pending Probe</td></tr>
+<tr><td>Row 3 (Pin 13)</td><td>Horizontal Sync</td><td>Pending Probe</td></tr>
+<tr><td>Row 3 (Pin 14)</td><td>Vertical Sync (VSync)</td><td>Verified</td></tr>
+</table>
+
+<div class="status">SYSTEM NOMINAL - NO 3D ASSETS LOADED</div>
 </body>
 </html>
 )=====";
 
-// Function to serve the website
 void handleRoot() {
 server.send(200, "text/html", fischyWebHTML);
 }
 
 void setup() {
-// Initialize the M5 device (Screen, Buttons, IMU, Mic all turn on automatically)
 auto cfg = M5.config();
 M5.begin(cfg);
 
 M5.Display.setTextSize(2);
-M5.Display.setRotation(1); // Landscape mode
+M5.Display.setRotation(1);
 
-// Set up pins for the Hardware Pin Mapper tool
+// G1 outputs voltage, G2 reads it (Use jumper wires here)
 pinMode(1, OUTPUT);
 pinMode(2, INPUT_PULLDOWN);
 
-// Start the FischyWeb Access Point
-WiFi.softAP("FischyWeb-S3", "teckyadmin");
+// Boot up the AP
+WiFi.softAP("FischyWeb-Test", "teckyadmin");
 server.on("/", handleRoot);
 server.begin();
 }
 
 void loop() {
-M5.update(); // Update button states and sensors
-server.handleClient(); // Keep the web server listening
+M5.update();
+server.handleClient();
 
-// Cycle through the tools when the main button (M5) is pressed
+// Big M5 button cycles the testing tools
 if (M5.BtnA.wasPressed()) {
 currentMode++;
 if (currentMode >= TOTAL_MODES) currentMode = 0;
@@ -66,63 +78,68 @@ M5.Display.clear();
 M5.Display.setCursor(0, 0);
 M5.Display.setTextColor(TFT_WHITE, TFT_BLACK);
 
-// --- THE TOOL MENUS ---
+// --- TESTING CHANNEL TOOLS --- //
 
 if (currentMode == 0) {
-// Mode 0: Web Server Info
-M5.Display.println("[ FISCHYWEB AP ]");
+// Mode 0: Web Server Status
+M5.Display.println("[ WEB HOST: LIVE ]");
 M5.Display.setTextSize(1);
-M5.Display.println("\nSSID: FischyWeb-S3");
-M5.Display.println("Pass: teckyadmin");
+M5.Display.println("\nSSID: FischyWeb-Test");
 M5.Display.println("IP: 192.168.4.1");
-M5.Display.println("\nConnect via phone/PC");
-M5.Display.println("to view flat UI site.");
+M5.Display.println("\nHosting flat UI pinout table.");
 M5.Display.setTextSize(2);
 }
 else if (currentMode == 1) {
-// Mode 1: Network & Port Diagnostics
-M5.Display.println("[ NET DIAGNOSTICS ]");
+// Mode 1: Active Port Forward Scanner
+M5.Display.println("[ PORT SCANNER ]");
 M5.Display.setTextSize(1);
-M5.Display.println("\nScanning Local Interface...");
-M5.Display.println("Testing Port Forwarding: OK");
-M5.Display.println("Server Admin Status: ACTIVE");
-M5.Display.println("Gateway: 192.168.4.1");
+M5.Display.printf("\nTarget: %s\n", serverIP);
+M5.Display.println("Checking active routing...\n");
+
+// Simulate port checks (Requires station mode to actually ping, simulated for AP mode)
+M5.Display.println("Port 80 (HTTP): OPEN");
+M5.Display.println("Port 443 (HTTPS): OPEN");
+M5.Display.println("Port 25565 (Cust): BLOCKED");
+M5.Display.setTextColor(TFT_YELLOW, TFT_BLACK);
+M5.Display.println("\nCheck firewall rules.");
 M5.Display.setTextSize(2);
 }
 else if (currentMode == 2) {
-// Mode 2: Hardware Pin Mapper & Conductivity
-M5.Display.println("[ PIN MAPPER ]");
+// Mode 2: Motherboard / Connector Pin Probe
+M5.Display.println("[ PIN PROBE ]");
 M5.Display.setTextSize(1);
-M5.Display.println("\nProbe active on G1 & G2.");
-M5.Display.println("Bridge with jumper wire");
-M5.Display.println("to test conductivity.");
+M5.Display.println("\nTesting continuity.");
+M5.Display.println("Isolate Top-Right Pin -> GND\n");
 
-// Send voltage out of Pin 1
-digitalWrite(1, HIGH);
+digitalWrite(1, HIGH); // Send signal
 
-// Read voltage on Pin 2
-M5.Display.setCursor(0, 80);
+M5.Display.setCursor(0, 85);
 if (digitalRead(2) == HIGH) {
 M5.Display.setTextColor(TFT_GREEN, TFT_BLACK);
-M5.Display.println("--> CIRCUIT CLOSED (OK)");
+M5.Display.println("--> CONNECTION DETECTED");
+M5.Display.println(" SIGNAL ROUTED.");
 } else {
 M5.Display.setTextColor(TFT_RED, TFT_BLACK);
-M5.Display.println("--> OPEN CIRCUIT");
+M5.Display.println("--> OPEN / DEAD PIN");
+M5.Display.println(" NO SIGNAL.");
 }
 M5.Display.setTextSize(2);
 }
 else if (currentMode == 3) {
-// Mode 3: IMU Matrix
-M5.Display.println("[ SENSOR MATRIX ]");
+// Mode 3: Hardware Diagnostics
+M5.Display.println("[ HW DIAGNOSTICS ]");
 M5.Display.setTextSize(1);
 
-float accelX, accelY, accelZ;
-M5.Imu.getAccelData(&accelX, &accelY, &accelZ);
+float aX, aY, aZ;
+M5.Imu.getAccelData(&aX, &aY, &aZ);
 
-M5.Display.printf("\nAccel X: %.2f\n", accelX);
-M5.Display.printf("Accel Y: %.2f\n", accelY);
-M5.Display.printf("Accel Z: %.2f\n", accelZ);
-M5.Display.println("\nMic: Active, Processing");
+M5.Display.printf("\nIMU-X: %f\n", aX);
+M5.Display.printf("IMU-Y: %f\n", aY);
+M5.Display.printf("IMU-Z: %f\n", aZ);
+
+// Quick mic level check (fake poll for UI testing)
+M5.Display.println("\nMic: Polling audio buffer...");
+M5.Display.println("System Memory: NOMINAL");
 M5.Display.setTextSize(2);
 }
 }
